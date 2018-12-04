@@ -31,7 +31,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     long BeginTime=0;
     long curTime=0;
+    long lastUpdate=0;
     public static long TimeDiff = 0;
+    long  TimeBetweenShakes;
 
     int[] pin={1,2,3};
     int pin_index=0;
@@ -39,9 +41,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static boolean ErrorRisen=false;
     public static boolean PinAuthenticated = false;
     public static boolean StopThread=false;
+    public static boolean pinDigitDetected=false;
+    public static long MinimumTimeBetweenShakes=800;
 
 
-    private static final float SHAKE_THRESHOLD = 2.55f;
+    private static final float SHAKE_THRESHOLD = 1.7f;
 
     TextView progress_bar;
     public static Handler handler = new Handler();
@@ -113,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
 
+
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
@@ -123,43 +128,48 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // gForce will be close to 1 when there is no movement.
         float gForce = (float)Math.sqrt(gX * gX + gY * gY + gZ * gZ);
+        double acceleration = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - SensorManager.GRAVITY_EARTH;
 
-        float speed = Math.abs(x + y + z - last_x - last_y - last_z) / 200*10000;
         curTime=System.currentTimeMillis();
         TimeDiff=curTime-BeginTime;
+        TimeBetweenShakes=curTime-lastUpdate;
 
-        //if Lesa el SmallTimeFrame ma5lessh
-        if( PinAuthenticated==false && ErrorRisen==false) {
-            if (TimeDiff < time_frame) {
-                if (gForce > SHAKE_THRESHOLD) {
-                    shake_count++;
-                    progress_bar.append(" " + shake_count);
-                    if (shake_count > pin[pin_index]) {
-                        progress_bar.append(" Error ");
-                        ErrorRisen = true;
+        if(TimeBetweenShakes>MinimumTimeBetweenShakes){
+            if(PinAuthenticated==false && ErrorRisen==false) {
+                if (TimeDiff < time_frame) {
+                    Log.i(TAG,"acceleration is "+acceleration);
+                    if (Math.abs(acceleration)> SHAKE_THRESHOLD) {
+                        shake_count++;
+                        progress_bar.append(" * ");
+                        if (shake_count > pin[pin_index]) {
+                            progress_bar.append(" Error ");
+                            ErrorRisen = true;
+                        }
                     }
                 }
-            }
-            //hena ya3ni el timeframe el so3'ayar 5eles wel shakes mazboota laken el BigTimeFrame ma5lessh
-            else if (shake_count == pin[pin_index] && pin_index < pin.length - 1) {
-                progress_bar.append(" - ");
-                shake_count = 0;
-                pin_index++;
-                BeginTime = System.currentTimeMillis();
-                curTime = System.currentTimeMillis();
-                Log.i(TAG, "pin index incremented");
+                //hena ya3ni el timeframe el so3'ayar 5eles wel shakes mazboota laken el BigTimeFrame ma5lessh
+                else if (shake_count == pin[pin_index] && pin_index < pin.length - 1) {
+                    shake_count = 0;
+                    pin_index++;
+                    BeginTime = System.currentTimeMillis();
+                    curTime = System.currentTimeMillis();
+                    Log.i(TAG, "pin index incremented");
 
-            }
-            //hena el timeframe el kebiir 5eles wel shakes mazboota
-            else if (pin_index == (pin.length - 1) && shake_count == pin[pin_index]) {
-                progress_bar.append(" Finished ");
-                PinAuthenticated = true;
-            } else {
-                progress_bar.append(" ERROR ");
-                ErrorRisen = true;
+                }
+                //hena el timeframe el kebiir 5eles wel shakes mazboota
+                else if (pin_index == (pin.length - 1) && shake_count == pin[pin_index]) {
+                    progress_bar.setText("CORRECT");
+                    PinAuthenticated = true;
+                } else {
+                    progress_bar.append(" ERROR ");
+                    ErrorRisen = true;
 
+                }
+                lastUpdate=curTime;
             }
         }
+        //if Lesa el SmallTimeFrame ma5lessh
+
 
         last_x=x;
         last_y=y;
