@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Sensor-based Authentication App</string>
+    <string name="textView">Sensor Based Authentication App</string>
+    <string name="textView2">Please Enter 1, 2, and 3 using shakes</string>
+    <string name="StartButton">Start</string>
+    <string name="ResetButton">Reset</string>
+</resources>
